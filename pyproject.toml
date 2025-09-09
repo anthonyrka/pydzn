@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "pydzn"
-version = "0.1.1"
+version = "0.1.2"
 description = "Tiny design-system utilities (Tailwind-like), composable HTML components, and a grid layout builder for Python/Jinja apps."
 readme = "README.md"
 requires-python = ">=3.10"

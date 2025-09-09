@@ -6,7 +6,6 @@ import json
 import inspect
 from pathlib import Path
 from jinja2 import Environment, FileSystemLoader, select_autoescape
-from .base_agent import BaseAssistant
 from .dzn import register_dzn_classes
 
 

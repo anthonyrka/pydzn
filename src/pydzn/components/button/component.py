@@ -1,4 +1,5 @@
-from src.base_component import BaseComponent
+from pydzn.base_component import BaseComponent
+
 
 class Button(BaseComponent):
     """

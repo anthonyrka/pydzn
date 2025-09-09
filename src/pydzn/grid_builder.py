@@ -2,7 +2,7 @@ from __future__ import annotations
 from dataclasses import dataclass
 from typing import Dict, List, Optional, Union, Tuple
 import html
-from src.dzn import register_dzn_classes
+from .dzn import register_dzn_classes
 
 
 CSSVal = Union[int, str]
