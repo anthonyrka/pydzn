@@ -4,13 +4,13 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "pydzn"
-version = "0.1.0"
+version = "0.1.1"
 description = "Tiny design-system utilities (Tailwind-like), composable HTML components, and a grid layout builder for Python/Jinja apps."
 readme = "README.md"
 requires-python = ">=3.10"
 license = { text = "Apache-2.0" }
 authors = [
-  { name = "Your Name", email = "you@example.com" }
+  { name = "Ryan Kirkish", email = "ryan@foo.com" }
 ]
 keywords = ["design-system", "css", "utility-classes", "jinja2", "components", "grid", "htmx"]
 classifiers = [
@@ -53,18 +53,14 @@ include-package-data = true
 
 [tool.setuptools.packages.find]
 where = ["src"]
-# If your package is exactly "pydzn" at src/pydzn, this will find it (and subpackages).
 
 [tool.setuptools.package-data]
-# Ship component assets next to their modules so BaseComponent can find template.html/styles.css
 pydzn = [
   "**/*.html",
   "**/*.css",
   "**/*.js",
   "py.typed"
 ]
-
-# --- Optional tooling config (nice defaults) ---
 
 [tool.black]
 target-version = ["py310"]
