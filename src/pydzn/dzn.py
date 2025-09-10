@@ -143,6 +143,26 @@ def emit_base(name: str) -> str | None:
         case "ms-auto": return rule(name, "margin-inline-start:auto")   # logical
         case "me-auto": return rule(name, "margin-inline-end:auto")     # logical
 
+        # positioning
+        case "sticky":      return rule(name, "position:sticky")
+        case "top-0":       return rule(name, "top:0")
+
+        # overflow helpers
+        case "overflow-hidden":   return rule(name, "overflow:hidden")
+        case "overflow-auto":     return rule(name, "overflow:auto")
+        case "overflow-y-auto":   return rule(name, "overflow-y:auto")
+        case "overflow-x-hidden": return rule(name, "overflow-x:hidden")
+        case "overflow-y-hidden": return rule(name, "overflow-y:hidden")
+
+        # overscroll-behavior
+        case "overscroll-auto":    return rule(name, "overscroll-behavior:auto")
+        case "overscroll-contain": return rule(name, "overscroll-behavior:contain")
+        case "overscroll-none":    return rule(name, "overscroll-behavior:none")
+
+        # optional: keep layout from shifting when scrollbar appears
+        case "scrollbar-stable":   return rule(name, "scrollbar-gutter:stable")
+
+
     return None
 
 def emit_scale(name: str) -> str | None:
@@ -292,6 +312,13 @@ def emit_arbitrary(name: str) -> str | None:
     if m := re.fullmatch(r"grid-rows-\[(.+?)\]", name):
         v = m.group(1).replace("_", " ")
         return rule(css_escape_class(name), f"grid-template-rows:{v}")
+
+    # z-index arbitrary
+    if m := re.fullmatch(r"z-\[(.+?)\]", name):
+        return rule(esel, f"z-index:{m.group(1)}")
+
+    if m := re.fullmatch(r"top-\[(.+?)\]", name):
+        return rule(esel, f"top:{m.group(1)}")
 
     # margin arbitrary (supports logical too)
     if m := re.fullmatch(r"m-\[(.+?)\]", name):
