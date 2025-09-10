@@ -74,6 +74,10 @@ def emit_base(name: str) -> str | None:
         case "justify-center":  return rule(name, "justify-content:center")
         case "text-center":     return rule(name, "text-align:center")
 
+        case "self-center": return rule(name, "align-self:center")
+        case "self-start":  return rule(name, "align-self:flex-start")
+        case "self-end":    return rule(name, "align-self:flex-end")
+
         # border (longhand for predictable overrides)
         case "border":
             return rule(name,
@@ -131,6 +135,13 @@ def emit_base(name: str) -> str | None:
         case "border-dotted": return rule(name, "border-style:dotted")
 
         case "aspect-square": return rule(name, "aspect-ratio:1/1")
+
+        # auto margins (centering helpers)
+        case "mx-auto": return rule(name, "margin-left:auto;margin-right:auto")
+        case "ml-auto": return rule(name, "margin-left:auto")
+        case "mr-auto": return rule(name, "margin-right:auto")
+        case "ms-auto": return rule(name, "margin-inline-start:auto")   # logical
+        case "me-auto": return rule(name, "margin-inline-end:auto")     # logical
 
     return None
 
@@ -199,6 +210,36 @@ def emit_scale(name: str) -> str | None:
         prop = {"tl":"top-left","tr":"top-right","br":"bottom-right","bl":"bottom-left"}[corner]
         return rule(name, f"border-{prop}-radius:{val}")
 
+    # --- margin scale ---
+    if m := re.fullmatch(r"m-(\d+)", name):
+        if (val := TOKENS["space"].get(m.group(1))) is not None:
+            return rule(name, f"margin:{val}")
+    if m := re.fullmatch(r"mx-(\d+)", name):
+        if (val := TOKENS["space"].get(m.group(1))) is not None:
+            return rule(name, f"margin-left:{val};margin-right:{val}")
+    if m := re.fullmatch(r"my-(\d+)", name):
+        if (val := TOKENS["space"].get(m.group(1))) is not None:
+            return rule(name, f"margin-top:{val};margin-bottom:{val}")
+    if m := re.fullmatch(r"mt-(\d+)", name):
+        if (val := TOKENS["space"].get(m.group(1))) is not None:
+            return rule(name, f"margin-top:{val}")
+    if m := re.fullmatch(r"mr-(\d+)", name):
+        if (val := TOKENS["space"].get(m.group(1))) is not None:
+            return rule(name, f"margin-right:{val}")
+    if m := re.fullmatch(r"mb-(\d+)", name):
+        if (val := TOKENS["space"].get(m.group(1))) is not None:
+            return rule(name, f"margin-bottom:{val}")
+    if m := re.fullmatch(r"ml-(\d+)", name):
+        if (val := TOKENS["space"].get(m.group(1))) is not None:
+            return rule(name, f"margin-left:{val}")
+    # logical (RTL-aware)
+    if m := re.fullmatch(r"ms-(\d+)", name):
+        if (val := TOKENS["space"].get(m.group(1))) is not None:
+            return rule(name, f"margin-inline-start:{val}")
+    if m := re.fullmatch(r"me-(\d+)", name):
+        if (val := TOKENS["space"].get(m.group(1))) is not None:
+            return rule(name, f"margin-inline-end:{val}")
+
     return None
 
 def emit_arbitrary(name: str) -> str | None:
@@ -251,6 +292,26 @@ def emit_arbitrary(name: str) -> str | None:
     if m := re.fullmatch(r"grid-rows-\[(.+?)\]", name):
         v = m.group(1).replace("_", " ")
         return rule(css_escape_class(name), f"grid-template-rows:{v}")
+
+    # margin arbitrary (supports logical too)
+    if m := re.fullmatch(r"m-\[(.+?)\]", name):
+        return rule(esel, f"margin:{m.group(1)}")
+    if m := re.fullmatch(r"mx-\[(.+?)\]", name):
+        v = m.group(1); return rule(esel, f"margin-left:{v};margin-right:{v}")
+    if m := re.fullmatch(r"my-\[(.+?)\]", name):
+        v = m.group(1); return rule(esel, f"margin-top:{v};margin-bottom:{v}")
+    if m := re.fullmatch(r"mt-\[(.+?)\]", name):
+        return rule(esel, f"margin-top:{m.group(1)}")
+    if m := re.fullmatch(r"mr-\[(.+?)\]", name):
+        return rule(esel, f"margin-right:{m.group(1)}")
+    if m := re.fullmatch(r"mb-\[(.+?)\]", name):
+        return rule(esel, f"margin-bottom:{m.group(1)}")
+    if m := re.fullmatch(r"ml-\[(.+?)\]", name):
+        return rule(esel, f"margin-left:{m.group(1)}")
+    if m := re.fullmatch(r"ms-\[(.+?)\]", name):
+        return rule(esel, f"margin-inline-start:{m.group(1)}")
+    if m := re.fullmatch(r"me-\[(.+?)\]", name):
+        return rule(esel, f"margin-inline-end:{m.group(1)}")
 
     return None
 
