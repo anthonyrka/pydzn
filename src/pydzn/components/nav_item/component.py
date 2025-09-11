@@ -71,6 +71,13 @@ class NavItem(VariantSupport, BaseComponent):
             "w-[100%] px-3 py-2 rounded-none border-0 "
             "bg-[transparent] text-body hover:bg-[rgba(15,23,42,.04)]"
         ),
+
+        # Simple family
+        "simple-item": (
+            "px-3 py-2 rounded-none border-0 bg-[transparent] no-underline "
+            "text-[#333] hover:text-[#6b6969]"
+        ),
+
     }
 
     SIZES = {
