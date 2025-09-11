@@ -1,5 +1,7 @@
 # DZN Semantic Classes
 
+
+```shell
 # =========================
 # LAYOUT & FLEXBOX
 # =========================
@@ -278,3 +280,4 @@ DEFAULT=1px  0=0  2=2px  4=4px  8=8px
 subtle=rgba(15,23,42,.06)  transparent  black  white
 slate-200/300/400
 blue-500  red-500  green-500
+```
