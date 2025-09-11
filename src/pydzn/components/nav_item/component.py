@@ -22,33 +22,33 @@ class NavItem(VariantSupport, BaseComponent):
     VARIANTS = {
         # Sidebar family
         "sidebar-default": (
-            "w-[100%] h-[48px] flex items-center justify-center text-center "
+            "flex items-center justify-center text-center "
             "rounded-none border-solid border-b border-subtle "
             "text-body hover:bg-[rgba(15,23,42,.06)]"
         ),
         "sidebar-compact": (
-            "w-[100%] h-[40px] flex items-center justify-center text-center "
+            "flex items-center justify-center text-center "
             "rounded-none border-solid border-b border-subtle "
             "text-body hover:bg-[rgba(15,23,42,.06)]"
         ),
         "sidebar-active": (
-            "w-[100%] h-[48px] flex items-center justify-center text-center "
+            "flex items-center justify-center text-center "
             "rounded-none border-solid border-b border-subtle "
             "bg-[rgba(37,99,235,.10)] text-[#2563eb]"
         ),
         "sidebar-quiet": (
-            "w-[100%] h-[48px] flex items-center justify-center text-center "
+            "flex items-center justify-center text-center "
             "rounded-none border-solid border-b border-subtle "
             "text-[rgb(100,116,139)] hover:bg-[rgba(15,23,42,.04)]"
         ),
         # underline-only (no box borders)
         "sidebar-underline": (
-            "w-[100%] flex items-center justify-center text-center "
+            "flex items-center justify-center text-center "
             "rounded-none border-0 border-b border-subtle border-solid py-2"
         ),
         # square tile w/ underline + hovers
         "sidebar-squared-underline": (
-            "w-[100%] h-[64px] flex items-center justify-center text-center "
+            "flex items-center justify-center text-center "
             "rounded-none border-0 border-b border-subtle border-solid py-2 "
             "hover:bg-[rgba(37,99,235,.06)] hover:border-blue-500 hover:text-[#2563eb] "
             "focus:bg-[rgba(37,99,235,.10)]"
@@ -56,7 +56,7 @@ class NavItem(VariantSupport, BaseComponent):
 
         # Dropdown family
         "dropdown-item": (
-            "w-[100%] px-3 py-2 rounded-md border-0 "
+            "px-3 py-2 rounded-md border-0 "
             "bg-[transparent] text-body hover:bg-[rgba(15,23,42,.06)]"
         ),
         "dropdown-accent": (
@@ -197,6 +197,15 @@ class NavItem(VariantSupport, BaseComponent):
         # reset class to just base
         self.html_attrs["class"] = self._base_dzn
         register_dzn_classes(self._base_dzn)
+        return self
+
+    def as_link(self, href: str, *, new_tab: bool=False):
+        self.tag = "a"
+        self.html_attrs["href"] = href
+        self.html_attrs["role"] = "link"
+        if new_tab:
+            self.html_attrs["target"] = "_blank"
+            self.html_attrs["rel"] = "noopener noreferrer"
         return self
 
     # required by BaseComponent

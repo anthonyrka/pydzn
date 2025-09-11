@@ -162,6 +162,13 @@ def emit_base(name: str) -> str | None:
         # optional: keep layout from shifting when scrollbar appears
         case "scrollbar-stable":   return rule(name, "scrollbar-gutter:stable")
 
+        # text decoration (links etc.)
+        case "no-underline":    return rule(name, "text-decoration:none")
+        case "underline":       return rule(name, "text-decoration:underline")
+        case "line-through":    return rule(name, "text-decoration:line-through")
+        case "decoration-solid":  return rule(name, "text-decoration-style:solid")
+        case "decoration-dashed": return rule(name, "text-decoration-style:dashed")
+        case "decoration-dotted": return rule(name, "text-decoration-style:dotted")
 
     return None
 
