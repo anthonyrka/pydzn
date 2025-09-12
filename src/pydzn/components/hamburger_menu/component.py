@@ -3,6 +3,7 @@ from pydzn.base_component import BaseComponent
 from pydzn.variants import VariantSupport
 from pydzn.dzn import register_dzn_classes
 
+
 def _hamburger_svg(sz=24):
     return f'''
 <svg width="{sz}" height="{sz}" viewBox="0 0 24 24" fill="none" aria-hidden="true">
@@ -19,6 +20,7 @@ def _close_svg(sz=24):
 </svg>
 '''.strip()
 
+
 class HamburgerMenu(VariantSupport, BaseComponent):
     VARIANTS = {
         # Trigger styles
@@ -31,7 +33,7 @@ class HamburgerMenu(VariantSupport, BaseComponent):
             "bg-[#2563eb] text-[white] hover:bg-[rgba(37,99,235,.92)] cursor-pointer"
         ),
 
-        # Panel styles: ❗ no default background here
+        # Panel styles: no default background here
         "panel:sheet": "text-[black] shadow-xl rounded-[10px]",
         "panel:glass": "text-[black] shadow-lg rounded-[10px] backdrop-blur bg-[rgba(255,255,255,.70)]",
         "panel:bare":  "text-[inherit] shadow-none",
