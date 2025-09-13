@@ -1,8 +1,9 @@
 from pydzn.base_component import BaseComponent
 from pydzn.variants import VariantSupport
+from pydzn.htmx import HtmxSupport
 
 
-class Card(VariantSupport, BaseComponent):
+class Card(VariantSupport, BaseComponent, HtmxSupport):
     """
     Server-rendered Card with pluggable variants/sizes/tones.
     Variants focus on layout/structure; tones mainly adjust border color.
