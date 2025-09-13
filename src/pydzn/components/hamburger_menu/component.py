@@ -157,7 +157,7 @@ class HamburgerMenu(VariantSupport, BaseComponent):
         trigger_html = f"""
 <label for="{cb_id}" class="hm__toggle {self._trigger_dzn} flex items-center gap-2" aria-controls="{drawer_id}" aria-haspopup="true" style="cursor:pointer">
   <span class="hm__icon hm__icon--hamburger" aria-hidden="true">{_hamburger_svg(self.icon_size)}</span>
-  <span class="hm__icon hm__icon--close" aria-hidden="true">{_close_svg(self.icon_size)}</span>
+  <span class="hm__icon hm__icon--close z-[10002]" aria-hidden="true">{_close_svg(self.icon_size)}</span>
 </label>
 """.strip()
 

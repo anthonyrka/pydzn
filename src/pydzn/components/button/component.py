@@ -1,8 +1,9 @@
 from pydzn.base_component import BaseComponent
 from pydzn.variants import VariantSupport
+from pydzn.htmx import HtmxSupport
 
 
-class Button(VariantSupport, BaseComponent):
+class Button(VariantSupport, BaseComponent, HtmxSupport):
     """
     Server-rendered Button with pluggable variants/sizes.
 

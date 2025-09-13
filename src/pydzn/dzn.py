@@ -42,6 +42,30 @@ TOKENS = {
     }
 }
 
+# Built-in palettes for -100..-900 (no :root vars needed)
+PALETTES = {
+    "red": {
+        "50": "#fef2f2", "100": "#fee2e2", "200": "#fecaca", "300": "#fca5a5",
+        "400": "#f87171", "500": "#ef4444", "600": "#dc2626", "700": "#b91c1c",
+        "800": "#991b1b", "900": "#7f1d1d",
+    },
+    "blue": {
+        "50": "#eff6ff", "100": "#dbeafe", "200": "#bfdbfe", "300": "#93c5fd",
+        "400": "#60a5fa", "500": "#3b82f6", "600": "#2563eb", "700": "#1d4ed8",
+        "800": "#1e40af", "900": "#1e3a8a",
+    },
+    "slate": {
+        "50": "#f8fafc", "100": "#f1f5f9", "200": "#e2e8f0", "300": "#cbd5e1",
+        "400": "#94a3b8", "500": "#64748b", "600": "#475569", "700": "#334155",
+        "800": "#1f2937", "900": "#0f172a",
+    },
+    "green": {
+        "50": "#f0fdf4", "100": "#dcfce7", "200": "#bbf7d0", "300": "#86efac",
+        "400": "#4ade80", "500": "#22c55e", "600": "#16a34a", "700": "#15803d",
+        "800": "#166534", "900": "#14532d",
+    },
+}
+
 # --- responsive breakpoints ---
 BPS = {
     "sm": "(min-width: 640px)",
@@ -188,7 +212,7 @@ def emit_scale(name: str) -> str | None:
         if (val := TOKENS["space"].get(m.group(1))) is not None:
             return rule(name, f"padding-top:{val};padding-bottom:{val}")
 
-    # border widths
+    # ---- border widths FIRST ----
     if m := re.fullmatch(r"border-(0|2|4|8)", name):
         w = TOKENS["border_width"][m.group(1)]
         return rule(name, f"border-width:{w}")
@@ -205,11 +229,27 @@ def emit_scale(name: str) -> str | None:
         prop = {"t":"top","r":"right","b":"bottom","l":"left"}[side]
         return rule(name, f"border-{prop}-width:{w}")
 
-    # border colors by token (e.g., border-slate-300)
+    # ---- border colors by token/palette/name ----
     if m := re.fullmatch(r"border-([a-z0-9-]+)", name):
-        col = TOKENS["border_color"].get(m.group(1))
+        key = m.group(1)
+
+        # exact token in TOKENS (e.g., red-500, slate-300)
+        col = TOKENS["border_color"].get(key)
         if col is not None:
             return rule(name, f"border-color:{col}")
+
+        # palette step: e.g., red-100 .. red-900
+        if (pm := re.fullmatch(r"([a-z]+)-(\d{2,3})", key)):
+            palette, step = pm.group(1), pm.group(2)
+            pal = PALETTES.get(palette)
+            if pal and step in pal:
+                return rule(name, f"border-color:{pal[step]}")
+
+        # plain named color: border-red
+        if re.fullmatch(r"[a-z]+", key):
+            return rule(name, f"border-color:{key}")
+
+        return None
 
     # rounded scale
     if m := re.fullmatch(r"rounded-([a-z0-9]+)", name):
@@ -289,10 +329,6 @@ def emit_arbitrary(name: str) -> str | None:
     if m := re.fullmatch(r"gap-\[(.+?)\]", name):
         return rule(esel, f"gap:{m.group(1)}")
 
-    # border width arbitrary
-    if m := re.fullmatch(r"border-\[(.+?)\]", name):
-        return rule(esel, f"border-width:{m.group(1)}")
-
     # rounded arbitrary
     if m := re.fullmatch(r"rounded-\[(.+?)\]", name):
         return rule(esel, f"border-radius:{m.group(1)}")
@@ -328,7 +364,20 @@ def emit_arbitrary(name: str) -> str | None:
     if m := re.fullmatch(r"top-\[(.+?)\]", name):
         return rule(esel, f"top:{m.group(1)}")
 
-    # margin arbitrary (supports logical too)
+    # --- border arbitrary: width OR color ---
+    if m := re.fullmatch(r"border-\[(.+?)\]", name):
+        v = m.group(1).replace("_", " ")
+        # length? → width (px/rem/em/ch/ex/vh/vw/%)
+        if re.fullmatch(r"\d+(?:\.\d+)?(px|rem|em|ch|ex|vh|vw|%)", v):
+            return rule(esel, f"border-width:{v}")
+        # otherwise treat as color (names, rgb/rgba/hsl/hsla, hex)
+        return rule(esel, f"border-color:{v}")
+
+    # explicit arbitrary border color
+    if m := re.fullmatch(r"border-color-\[(.+?)\]", name):
+        return rule(esel, f"border-color:{m.group(1).replace('_',' ')}")
+
+    # --- margin arbitrary (supports logical too) ---
     if m := re.fullmatch(r"m-\[(.+?)\]", name):
         return rule(esel, f"margin:{m.group(1)}")
     if m := re.fullmatch(r"mx-\[(.+?)\]", name):
