@@ -1,6 +1,6 @@
 from __future__ import annotations
 import re
-from typing import Iterable
+from typing import Iterable, Dict, Any, Optional
 
 
 # --- tokens (extend as needed) ---
@@ -42,6 +42,12 @@ TOKENS = {
     }
 }
 
+FONT_SIZES = {
+    "xs": "0.75rem", "sm": "0.875rem", "base": "1rem",
+    "lg": "1.125rem", "xl": "1.25rem", "2xl": "1.5rem",
+    "3xl": "1.875rem", "4xl": "2.25rem"
+}
+
 # Built-in palettes for -100..-900 (no :root vars needed)
 PALETTES = {
     "red": {
@@ -73,7 +79,56 @@ BPS = {
     "lg": "(min-width: 1024px)",
 }
 
+
+_THEME_REGISTRY: Dict[str, Dict[str, Any]] = {}
+_ACTIVE_THEME: Optional[str] = None
+
+def register_theme(name: str, *, vars: Optional[dict] = None, **palettes: dict) -> None:
+    """
+    Register a theme with:
+      - vars:     single-value tokens → emitted as --<key>: <value>
+      - palettes: any number of color scales (e.g. brand, accent, warning ...)
+                   each is a dict like {"50":"...", "100":"...", ..., "900":"..."}
+    Example:
+        register_theme("light",
+            vars={"bg-surface":"#fff", "text-body":"#0f172a"},
+            brand={...},
+            accent={...}  # arbitrary group name supported
+        )
+    """
+    _THEME_REGISTRY[name] = {
+        "vars": dict(vars or {}),
+        "palettes": {k: dict(v) for k, v in palettes.items()},
+    }
+
+def set_active_theme(name: str) -> None:
+    global _ACTIVE_THEME
+    if name not in _THEME_REGISTRY:
+        raise ValueError(f"set_active_theme: unknown theme '{name}'")
+    _ACTIVE_THEME = name
+
+def compile_theme_css() -> str:
+    """
+    Emit CSS vars for ALL registered themes, scoped under .theme-<name>.
+    Does NOT touch :root.
+    """
+    blocks: list[str] = []
+    for name, spec in _THEME_REGISTRY.items():
+        lines: list[str] = []
+        # single-value vars
+        for k, v in spec.get("vars", {}).items():
+            lines.append(f"--{k}: {v};")
+        # palettes (brand/accent/warning/etc.)
+        for group, palette in spec.get("palettes", {}).items():
+            for step, color in palette.items():
+                lines.append(f"--{group}-{step}: {color};")
+        if lines:
+            blocks.append(f".theme-{name}{{{''.join(lines)}}}")
+    return "\n".join(blocks)
+
+
 _used: set[str] = set()
+
 
 def register_dzn_classes(classes: str | Iterable[str]) -> None:
     if isinstance(classes, str):
@@ -81,17 +136,21 @@ def register_dzn_classes(classes: str | Iterable[str]) -> None:
     else:
         _used.update(classes)
 
+
 # --- selector escaping for arbitrary utilities ---
 def css_escape_class(cls: str) -> str:
     # Escape any char not [a-zA-Z0-9_-] so the selector matches the literal class in HTML
     return re.sub(r'([^a-zA-Z0-9_-])', r'\\\1', cls)
 
+
 # --- emit helpers ---
 def rule(selector: str, body: str) -> str:
     return f".{selector}{{{body}}}"
 
+
 def emit_base(name: str) -> str | None:
     match name:
+
         # layout
         case "flex":            return rule(name, "display:flex")
         case "flex-col":        return rule(name, "flex-direction:column")
@@ -99,20 +158,35 @@ def emit_base(name: str) -> str | None:
         case "justify-center":  return rule(name, "justify-content:center")
         case "text-center":     return rule(name, "text-align:center")
 
+        case "items-start":   return rule(name, "align-items:flex-start")
+        case "items-end":     return rule(name, "align-items:flex-end")
+        case "justify-start": return rule(name, "justify-content:flex-start")
+        case "justify-end":   return rule(name, "justify-content:flex-end")
+
         case "self-center": return rule(name, "align-self:center")
         case "self-start":  return rule(name, "align-self:flex-start")
         case "self-end":    return rule(name, "align-self:flex-end")
 
+        # --- semantic aliases (themeable via CSS vars with fallbacks) ---
+        case "bg-surface":   return rule(name, "background:var(--bg-surface, #ffffff)")
+        case "bg-elevated":  return rule(name, "background:var(--bg-elevated, #ffffff)")
+        case "bg-muted":     return rule(name, "background:var(--bg-muted, #f8fafc)")
+        case "text-body":    return rule(name, "color:var(--text-body, #0f172a)")
+        case "text-muted":   return rule(name, "color:var(--text-muted, #475569)")
+        case "text-inverse": return rule(name, "color:var(--text-inverse, #ffffff)")
+        case "border-subtle":
+            return rule(name, f"border-color:var(--border-subtle, {TOKENS['border_color']['subtle']})")
+
         # border (longhand for predictable overrides)
         case "border":
-            return rule(name,
+            return rule(
+                name,
                 f"border-style:solid;"
                 f"border-width:{TOKENS['border_width']['DEFAULT']};"
                 f"border-color:{TOKENS['border_color']['subtle']}"
             )
 
-        # quick border colors
-        case "border-subtle":       return rule(name, f"border-color:{TOKENS['border_color']['subtle']}")
+        # quick border colors (keep, but don't re-define border-subtle here)
         case "border-transparent":  return rule(name, f"border-color:{TOKENS['border_color']['transparent']}")
         case "border-black":        return rule(name, f"border-color:{TOKENS['border_color']['black']}")
         case "border-white":        return rule(name, f"border-color:{TOKENS['border_color']['white']}")
@@ -133,16 +207,17 @@ def emit_base(name: str) -> str | None:
         case "shadow-inner":    return rule(name, f"box-shadow:{TOKENS['shadow']['inner']}")
 
         # visibility
-        case "hidden":       return rule(name, "display:none")
-        case "block":        return rule(name, "display:block")          # handy for toggling back
+        case "hidden":       return rule(name, "display:none!important")
+        case "block":        return rule(name, "display:block")
         case "inline-block": return rule(name, "display:inline-block")
-        case "invisible":    return rule(name, "visibility:hidden")      # keeps layout
+        case "invisible":    return rule(name, "visibility:hidden")
         case "visible":      return rule(name, "visibility:visible")
 
         # positioning
         case "fixed":    return rule(name, "position:fixed")
         case "absolute": return rule(name, "position:absolute")
         case "relative": return rule(name, "position:relative")
+        case "sticky":   return rule(name, "position:sticky")   # <-- ADD THIS
         case "top-0":    return rule(name, "top:0")
         case "right-0":  return rule(name, "right:0")
         case "bottom-0": return rule(name, "bottom:0")
@@ -155,7 +230,7 @@ def emit_base(name: str) -> str | None:
 
         case "grid": return rule(name, "display:grid")
 
-        case "border-solid": return rule(name, "border-style:solid")
+        case "border-solid":  return rule(name, "border-style:solid")
         case "border-dashed": return rule(name, "border-style:dashed")
         case "border-dotted": return rule(name, "border-style:dotted")
 
@@ -165,12 +240,8 @@ def emit_base(name: str) -> str | None:
         case "mx-auto": return rule(name, "margin-left:auto;margin-right:auto")
         case "ml-auto": return rule(name, "margin-left:auto")
         case "mr-auto": return rule(name, "margin-right:auto")
-        case "ms-auto": return rule(name, "margin-inline-start:auto")   # logical
-        case "me-auto": return rule(name, "margin-inline-end:auto")     # logical
-
-        # positioning
-        case "sticky":      return rule(name, "position:sticky")
-        case "top-0":       return rule(name, "top:0")
+        case "ms-auto": return rule(name, "margin-inline-start:auto")
+        case "me-auto": return rule(name, "margin-inline-end:auto")
 
         # overflow helpers
         case "overflow-hidden":   return rule(name, "overflow:hidden")
@@ -188,16 +259,23 @@ def emit_base(name: str) -> str | None:
         case "scrollbar-stable":   return rule(name, "scrollbar-gutter:stable")
 
         # text decoration (links etc.)
-        case "no-underline":    return rule(name, "text-decoration:none")
-        case "underline":       return rule(name, "text-decoration:underline")
-        case "line-through":    return rule(name, "text-decoration:line-through")
+        case "no-underline":      return rule(name, "text-decoration:none")
+        case "underline":         return rule(name, "text-decoration:underline")
+        case "line-through":      return rule(name, "text-decoration:line-through")
         case "decoration-solid":  return rule(name, "text-decoration-style:solid")
         case "decoration-dashed": return rule(name, "text-decoration-style:dashed")
         case "decoration-dotted": return rule(name, "text-decoration-style:dotted")
 
     return None
 
+
+
 def emit_scale(name: str) -> str | None:
+
+    # font sizes
+    if m := re.fullmatch(r"text-(xs|sm|base|lg|xl|2xl|3xl|4xl)", name):
+        return rule(name, f"font-size:{FONT_SIZES[m.group(1)]}")
+
     # spacing
     if m := re.fullmatch(r"gap-(\d+)", name):
         if (val := TOKENS["space"].get(m.group(1))) is not None:
@@ -233,23 +311,24 @@ def emit_scale(name: str) -> str | None:
     if m := re.fullmatch(r"border-([a-z0-9-]+)", name):
         key = m.group(1)
 
-        # exact token in TOKENS (e.g., red-500, slate-300)
+        # 1) exact token (e.g., slate-300)
         col = TOKENS["border_color"].get(key)
         if col is not None:
             return rule(name, f"border-color:{col}")
 
-        # palette step: e.g., red-100 .. red-900
+        # 2) built-in static palettes (red/blue/slate/green)
         if (pm := re.fullmatch(r"([a-z]+)-(\d{2,3})", key)):
             palette, step = pm.group(1), pm.group(2)
             pal = PALETTES.get(palette)
             if pal and step in pal:
                 return rule(name, f"border-color:{pal[step]}")
 
-        # plain named color: border-red
+        # 3) plain named color: border-red, border-green, etc.
         if re.fullmatch(r"[a-z]+", key):
             return rule(name, f"border-color:{key}")
 
-        return None
+        # No return here: fall through so theme variable palettes can handle
+        # e.g., border-accent-500 → var(--accent-500)
 
     # rounded scale
     if m := re.fullmatch(r"rounded-([a-z0-9]+)", name):
@@ -308,7 +387,36 @@ def emit_scale(name: str) -> str | None:
         if (val := TOKENS["space"].get(m.group(1))) is not None:
             return rule(name, f"margin-inline-end:{val}")
 
+    # --- brand palette via theme variables ---
+    # bg-brand-500 / text-brand-600 / border-brand-300
+    if m := re.fullmatch(r"(bg|text|border)-brand-(\d{2,3})", name):
+        prop, step = m.group(1), m.group(2)
+        if prop == "bg":
+            return rule(name, f"background:var(--brand-{step})")
+        if prop == "text":
+            return rule(name, f"color:var(--brand-{step})")
+        if prop == "border":
+            return rule(name, f"border-color:var(--brand-{step})")
+
+    # theme palette → text-accent-600, text-brand-500, text-warning-400, etc.
+    if m := re.fullmatch(r"text-([a-z]+)-(\d{2,3})", name):
+        group, step = m.groups()
+        return rule(name, f"color:var(--{group}-{step})")
+
+    # optional: background palette → bg-accent-50, bg-brand-100, etc.
+    if m := re.fullmatch(r"bg-([a-z]+)-(\d{2,3})", name):
+        group, step = m.groups()
+        return rule(name, f"background:var(--{group}-{step})")
+
+    # you already handle borders; if not, mirror the same idea:
+    # border-accent-500 → border-color: var(--accent-500)
+    if m := re.fullmatch(r"border-([a-z]+)-(\d{2,3})", name):
+        group, step = m.groups()
+        return rule(name, f"border-color:var(--{group}-{step})")
+
+
     return None
+
 
 def emit_arbitrary(name: str) -> str | None:
     esel = css_escape_class(name)
@@ -396,6 +504,10 @@ def emit_arbitrary(name: str) -> str | None:
         return rule(esel, f"margin-inline-start:{m.group(1)}")
     if m := re.fullmatch(r"me-\[(.+?)\]", name):
         return rule(esel, f"margin-inline-end:{m.group(1)}")
+
+    # transition arbitrary (underscores become spaces)
+    if m := re.fullmatch(r"transition-\[(.+?)\]", name):
+        return rule(esel, f"transition:{m.group(1).replace('_',' ')}")
 
     return None
 

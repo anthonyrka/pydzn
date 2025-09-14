@@ -75,11 +75,24 @@ class GridLayoutBuilder:
         self._named_cols: List[Tuple[str, str]] = [("main", "1fr")]
         self._named_rows: List[Tuple[str, str]] = [("content", "1fr")]
         self._regions: List[_Region] = []
-        self._outer_dzn: str = ""          # keep empty by default (no forced classes)
-        self._height_css: str = "100vh"    # default grid height value
+        # Defaults that can be overridden per-instance at render() time
+        self._default_outer_dzn: str = ""      # wrapper
+        self._default_container_dzn: str = ""  # inner grid
+        self._height_css: str = "100vh"        # default grid height value
         # NEW: which CSS property to use for height control ("min-height" | "height" | "both")
         self._height_property: str = "min-height"
         self._height_apply_to: str = "container"  # 'outer' | 'container' | 'both'
+
+    # ---------------- optional builder-level defaults ----------------
+    def outer_dzn(self, classes: str) -> "GridLayoutBuilder":
+        """Set default classes for the OUTER wrapper; can be overridden at render()."""
+        self._default_outer_dzn = classes or ""
+        return self
+
+    def container_dzn(self, classes: str) -> "GridLayoutBuilder":
+        """Set default classes for the INNER grid container; can be overridden at render()."""
+        self._default_container_dzn = classes or ""
+        return self
 
     # ---------------- tracks (named & ordered) ----------------
     def columns(self, **spec: CSSVal) -> "GridLayoutBuilder":
@@ -210,40 +223,73 @@ class GridLayoutBuilder:
         height_prop = self._height_property
         height_apply_to = self._height_apply_to
 
+        # capture builder-level defaults into closure
+        default_outer_dzn = self._default_outer_dzn
+        default_container_dzn = self._default_container_dzn
+
+        # inside build() just before class _Layout:
         class _Layout:
-            __slots__ = ("_grid_cols", "_grid_rows", "_regions", "_order",
-                         "_outer_dzn", "_region_dzn", "_debug")
+            __slots__ = (
+                "_grid_cols", "_grid_rows", "_regions", "_order",
+                "_outer_dzn", "_container_dzn", "_region_dzn",
+                "_outer_id", "_container_id", "_region_ids", "_debug"
+            )
 
             def __init__(
                 self,
                 *,
+                # alias: `dzn` == outer wrapper classes
+                dzn: str = "",
                 outer_dzn: str = "",
+                container_dzn: str = "",
                 region_dzn: Optional[Dict[str, str]] = None,
+
+                # NEW: id hooks
+                outer_id: str = "",
+                container_id: str = "",
+                region_ids: Optional[Dict[str, str]] = None,
+
                 debug: bool = False,
             ):
                 self._grid_cols = grid_cols
                 self._grid_rows = grid_rows
-                self._regions = resolved
-                self._order = order
-                self._outer_dzn = outer_dzn or ""
-                self._region_dzn = region_dzn or {}
+                self._regions   = resolved
+                self._order     = order
+
+                # merge builder defaults + per-instance args (as you already do)
+                eff_outer     = " ".join(x for x in [default_outer_dzn, outer_dzn, dzn] if x).strip()
+                eff_container = " ".join(x for x in [default_container_dzn, container_dzn] if x).strip()
+
+                self._outer_dzn     = eff_outer
+                self._container_dzn = eff_container
+                self._region_dzn    = region_dzn or {}
+
+                # NEW: ids
+                self._outer_id     = outer_id or ""
+                self._container_id = container_id or ""
+                self._region_ids   = region_ids or {}
+
                 self._debug = bool(debug)
 
                 if self._outer_dzn:
                     register_dzn_classes(self._outer_dzn)
+                if self._container_dzn:
+                    register_dzn_classes(self._container_dzn)
                 if self._region_dzn:
                     register_dzn_classes(" ".join(self._region_dzn.values()))
 
             def render(self, **slots: str) -> str:
-                # outer wrapper (no template)
-                outer_attr = f' class="{html.escape(self._outer_dzn)}"' if self._outer_dzn else ""
-                grid_class = f"{self._grid_cols} {self._grid_rows}".strip()
+                # id/class attrs for outer
+                outer_id_attr   = f' id="{html.escape(self._outer_id)}"' if self._outer_id else ""
+                outer_class_attr= f' class="{html.escape(self._outer_dzn)}"' if self._outer_dzn else ""
 
-                # Build styles conditionally based on fill_height settings
+                # inner grid class (+ optional id)
+                grid_class = " ".join(c for c in ["grid", self._grid_cols, self._grid_rows, self._container_dzn] if c).strip()
+                container_id_attr = f' id="{html.escape(self._container_id)}"' if self._container_id else ""
+
+                # height styles (unchanged)
                 outer_style_parts: List[str] = []
-                # FIX: add semicolon after display:grid;
                 grid_style_parts:  List[str] = ["display:grid;"]
-
                 def _apply_height(parts: List[str]):
                     if height_prop == "both":
                         parts.append(f"height:{html.escape(height_css)};")
@@ -252,7 +298,6 @@ class GridLayoutBuilder:
                         parts.append(f"height:{html.escape(height_css)};")
                     else:
                         parts.append(f"min-height:{html.escape(height_css)};")
-
                 if height_apply_to in ("outer", "both"):
                     _apply_height(outer_style_parts)
                 if height_apply_to in ("container", "both"):
@@ -262,42 +307,36 @@ class GridLayoutBuilder:
                 grid_style_attr  = f' style="{"".join(grid_style_parts)}"'
 
                 out: List[str] = []
-                out.append(f"<div{outer_attr}{outer_style_attr}>")
-                out.append(f'  <div class="{html.escape(grid_class)}"{grid_style_attr}>')
+                out.append(f"<div{outer_id_attr}{outer_class_attr}{outer_style_attr}>")
+                out.append(f'  <div{container_id_attr} class="{html.escape(grid_class)}"{grid_style_attr}>')
 
                 for name in self._order:
                     R = self._regions[name]
                     slot_html = slots.get(name, "") or ""
+
+                    # NEW: optional per-region id
+                    rid = self._region_ids.get(name, "")
+                    region_id_attr = f' id="{html.escape(rid)}"' if rid else ""
+
                     region_cls = " ".join(c for c in [R.dzn, self._region_dzn.get(name, "")] if c).strip()
                     region_cls_attr = f' class="{html.escape(region_cls)}"' if region_cls else ""
                     region_style_attr = f' style="{html.escape(R.placement_style())}"'
 
-                    # add debug outline; make wrapper a positioning context only if it's static
                     if self._debug:
                         dbg_outline = "outline:1px dashed rgba(220,38,38,.55);outline-offset:-1px;"
-
-                        # figure out if region already positions itself via classes
-                        # (so we DON'T override fixed/absolute/sticky/relative with inline styles)
-                        has_pos = False
-                        if region_cls:
-                            pos_tokens = {"fixed", "absolute", "relative", "sticky"}
-                            has_pos = any(tok in region_cls.split() for tok in pos_tokens)
-
+                        has_pos = any(tok in (region_cls.split() if region_cls else []) for tok in {"fixed","absolute","relative","sticky"})
                         dbg = dbg_outline + ("" if has_pos else "position:relative;")
-                        region_style_attr = region_style_attr[:-1] + dbg + '"'  # append
+                        region_style_attr = region_style_attr[:-1] + dbg + '"'
 
-                    out.append(f'    <div data-region="{html.escape(name)}"{region_cls_attr}{region_style_attr}>')
-
+                    out.append(f'    <div{region_id_attr} data-region="{html.escape(name)}"{region_cls_attr}{region_style_attr}>')
                     if self._debug:
                         out.append(
                             '      <div style="position:absolute;top:2px;left:2px;z-index:1;'
                             'font:11px/1.2 system-ui, -apple-system, Segoe UI, Roboto;'
                             'color:rgba(220,38,38,.8);padding:2px 4px;'
-                            'background:rgba(255,255,255,.6);border-radius:3px;'
-                            'pointer-events:none;">'
+                            'background:rgba(255,255,255,.6);border-radius:3px;pointer-events:none;">'
                             f'{html.escape(name)}</div>'
                         )
-
                     if slot_html:
                         out.append(f"      {slot_html}")
                     out.append("    </div>")
@@ -305,6 +344,7 @@ class GridLayoutBuilder:
                 out.append("  </div>")
                 out.append("</div>")
                 return "\n".join(out)
+
 
         _Layout.__name__ = name
         return _Layout

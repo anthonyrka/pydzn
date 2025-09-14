@@ -20,6 +20,9 @@ class NavItem(VariantSupport, BaseComponent):
 
     # -------- Variants --------
     VARIANTS = {
+        # empty key → no styles when variant is ""
+        "": "",
+
         # Sidebar family
         "sidebar-default": (
             "flex items-center justify-center text-center "
@@ -92,7 +95,7 @@ class NavItem(VariantSupport, BaseComponent):
         "danger":  "text-[rgb(239,68,68)]",
     }
 
-    DEFAULTS = {"variant": "sidebar-default", "size": "md", "tone": ""}
+    DEFAULTS = {"variant": "", "size": "md", "tone": ""}
 
     # -------- ctor --------
     def __init__(
@@ -213,6 +216,12 @@ class NavItem(VariantSupport, BaseComponent):
         if new_tab:
             self.html_attrs["target"] = "_blank"
             self.html_attrs["rel"] = "noopener noreferrer"
+        return self
+
+    def no_underline(self, all_states: bool = True):
+        self._add_runtime("no-underline")
+        if all_states:
+            self._add_runtime("hover:no-underline", "focus:no-underline")
         return self
 
     # required by BaseComponent
