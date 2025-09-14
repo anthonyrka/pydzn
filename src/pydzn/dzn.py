@@ -86,9 +86,9 @@ _ACTIVE_THEME: Optional[str] = None
 def register_theme(name: str, *, vars: Optional[dict] = None, **palettes: dict) -> None:
     """
     Register a theme with:
-      - vars:     single-value tokens → emitted as --<key>: <value>
-      - palettes: any number of color scales (e.g. brand, accent, warning ...)
-                   each is a dict like {"50":"...", "100":"...", ..., "900":"..."}
+    - vars:     single-value tokens → emitted as --<key>: <value>
+    - palettes: any number of color scales (e.g. brand, accent, warning ...)
+                each is a dict like {"50":"...", "100":"...", ..., "900":"..."}
     Example:
         register_theme("light",
             vars={"bg-surface":"#fff", "text-body":"#0f172a"},
@@ -174,8 +174,16 @@ def emit_base(name: str) -> str | None:
         case "text-body":    return rule(name, "color:var(--text-body, #0f172a)")
         case "text-muted":   return rule(name, "color:var(--text-muted, #475569)")
         case "text-inverse": return rule(name, "color:var(--text-inverse, #ffffff)")
-        case "border-subtle":
-            return rule(name, f"border-color:var(--border-subtle, {TOKENS['border_color']['subtle']})")
+        case "border-subtle": return rule(name, f"border-color:var(--border-subtle, {TOKENS['border_color']['subtle']})")
+
+        case "bg-cover":     return rule(name, "background-size:cover")
+        case "bg-contain":   return rule(name, "background-size:contain")
+        case "bg-center":    return rule(name, "background-position:center")
+        case "bg-top":       return rule(name, "background-position:top")
+        case "bg-bottom":    return rule(name, "background-position:bottom")
+        case "bg-no-repeat": return rule(name, "background-repeat:no-repeat")
+        case "bg-repeat":    return rule(name, "background-repeat:repeat")
+
 
         # border (longhand for predictable overrides)
         case "border":
@@ -508,6 +516,10 @@ def emit_arbitrary(name: str) -> str | None:
     # transition arbitrary (underscores become spaces)
     if m := re.fullmatch(r"transition-\[(.+?)\]", name):
         return rule(esel, f"transition:{m.group(1).replace('_',' ')}")
+
+    # background-image (DO NOT replace underscores)
+    if m := re.fullmatch(r"bg-image-\[(.+?)\]", name):
+        return rule(esel, f"background-image:{m.group(1)}")
 
     return None
 
