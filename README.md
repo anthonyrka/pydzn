@@ -8,7 +8,7 @@ More than just a view layer, pydzn serves as a framework that introduces python 
 ## Who is pydzn for
 - Python fluent programmers who find designing and developing nice looking websites a frustrating task
 - Students learning python who also want to learn how to build websites
-- Backend developers and data scientists who want to build AI-first web applications
+- Backend developers and data scientists who want to build AI-embedded web applications
 - Front-end developers who value simplicity while maintaining full control over their runtime
 - Professional front-end developers who want to avoid react abstraction bloat and javascript's async chaos
 
