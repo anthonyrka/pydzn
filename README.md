@@ -1,132 +1,148 @@
 # pydzn
 *Pronounced:* **[paɪ dɪˈzaɪn]** — “**pie design**” (aka **py-design**)
 
-Build full websites in Python with server-side components, a design system that leverages semantic classes, and a grid layout builder.
+Design and develop complex websites all in python. Build web components, rendered on the server-side and served up in any python backend web server (flask, django...).
 
-## What is pydzn
-pydzn or "py design" is a lightweight python library that makes it easy to design, build and serve complex websites all in python. It provides an api into CSS-grid for designing layouts and serves as a light-weight website builder with a built-in, and extendable, component library as well as a library for setting CSS semantic classes.
+More than just a view layer, pydzn serves as a framework that introduces python developers to front end development with an intuitive approach for layout design, component development and styling.
 
+## Who is pydzn for
+- Python fluent programmers who find designing and developing nice looking websites a frustrating task
+- Students learning python who also want to learn how to build websites
+- Backend developers and data scientists who want to build AI-first web applications
+- Front-end developers who value simplicity while maintaining full control over their runtime
+- Professional front-end developers who want to avoid react abstraction bloat and javascript's async chaos
+
+## Why pydzn
+Creating and serving a webpage is technically easy for most developers. Designing and developing a nice looking website is much more difficult. pydzn offers a framework for, breaking up the task of front-end design and development, logically, into layout creation, component creation with the injection of those components into that layout. Where a layout is a grid in a 2-dimensional space containing named regions of which you style and inject components into. A layout is a class which can have an arbitrary number of regions. A region is a placement in a grid layout for which another layout can be inject OR a component.
+
+## Introduction
+
+### Layouts
+A website is a design in a 2-dimensional space, therefore, a design divides that 2-dimensional space into regions. We've made this easy to do in pydzn with the `layout_builder`. With a little practice you'll start seeing other websites as "grid layouts" and you'll find it easy to recreate them in pydzn. Let's start by creating a generic page layout.
+
+```python
+@app.route("/tutorial")
+def tutorial():
+    from pydzn.grid_builder import layout_builder
+
+    APPBAR_HEIGHT=100
+    HERO_HEIGHT=200
+    BODY_HEIGHT=400
+    FOOTER_HEIGHT=200
+    DEBUG=True
+
+    GenericPageLayout = (
+        layout_builder()
+        .fill_height("100%", property="height")
+        .columns(c0="1fr") # for the base layout we only need one column because each row will be it's own region
+        .rows(r0=APPBAR_HEIGHT, r1=HERO_HEIGHT, r2=BODY_HEIGHT, r3=FOOTER_HEIGHT) # each row is a section of the web page in this case
+        .region("appbar", row="r0", col="c0") # the appbar belongs in row 0 and column 0
+        .region("hero", row="r1", col="c0")
+        .region("body", row="r2", col="c0")
+        .region("footer", row="r3", col="c0")
+        .build(name="GenericPageLayout")
+    )
+
+    body = GenericPageLayout(debug=DEBUG).render() # set debug=True in order view the layout lines and region names for easier development
+    return render_template("index.html", body=body)
+```
+
+<p align="center">
+  <img src="docs/simple_website_layout_start.png" alt="mobile" width="640">
+</p>
+
+The layout we've created is a common layout containing an appbar, hero, body and footer. Let's now inject the appbar layout into the appbar region.
+
+```python
+...
+    AppBarLayout = (
+        layout_builder()
+        .fill_height("100%", property="height")
+        .columns(c0="1fr", c1="3fr", c2="1fr", c3="1fr", c4="1fr") # we'll divide the app bar into 5 columns and we'll make c1 a spacer
+        .rows(r0=APPBAR_HEIGHT) # we've previously set the appbar height so we'll use it
+        .region("brand", row="r0", col="c0")
+        .region("spacer0", row="r0", col="c1")
+        .region("about", row="r0", col="c2")
+        .region("contact", row="r0", col="c3")
+        .region("services", row="r0", col="c4")
+        .build(name="AppBarLayout")
+    )
+
+    body = GenericPageLayout(debug=DEBUG).render(
+        appbar=AppBarLayout(debug=DEBUG).render()  # appbar, like hero, body and footer are variables in the render function's signature
+    )
+    return render_template("index.html", body=body)
+```
+
+<p align="center">
+  <img src="docs/simple_website_layout_appbar.png" alt="mobile" width="640">
+</p>
+
+Next let's add some of pydzn pre-made components into the appbar.
+
+```python
+    from pydzn.components import Text, NavItem
+
+    body = GenericPageLayout(debug=DEBUG).render(
+        appbar=AppBarLayout(debug=DEBUG).render(
+            brand=Text(
+                text="Acme Widgets", 
+                dzn="text-[#272727]").render(), # let's give the text a color using pydzn semantic classes
+            about=NavItem(
+                children=Text(
+                    text="About Us", dzn="text-[#272727]").render()
+                    ).no_underline().center().as_link("/#").render(),
+            contact=NavItem(
+                children=Text(text="Contact Us", dzn="text-[#272727]").render()
+                ).no_underline().center().as_link("/#").render(),
+            services=NavItem(
+                children=Text(text="Services", dzn="text-[#272727]").render()
+                ).no_underline().center().as_link("/#").render()
+        )
+    )
+    return render_template("index.html", body=body)
+```
+<p align="center">
+  <img src="docs/simple_website_layout_appbar_components.png" alt="mobile" width="640">
+</p>
+
+We inject complex components (NavItem composed of Text) into the region slots inside `AppBarLayout`, however, I don't like how the look inside their respective regions. pydzn provides a dzn controls on layouts in order to define the layout within each region. Let's center each of these components in their respective region.
+
+```python
+    from pydzn.components import Text, NavItem
+
+    body = GenericPageLayout(
+        debug=DEBUG,).render(
+        appbar=AppBarLayout(
+            debug=DEBUG,
+            region_dzn={
+            "brand": "flex items-center justify-center", # pydzn provides fine control on individual region styles using the dzn semantic classes
+            "about": "flex items-center justify-center",
+            "contact": "flex items-center justify-center",
+            "services": "flex items-center justify-center"
+        }).render(
+            brand=Text(text="Acme Widgets", dzn="text-[#272727]").render(), # let's give the text a color using pydzn semantic classes
+            about=NavItem(
+                children=Text(
+                    text="About Us", dzn="text-[#272727]").render()).no_underline().center().as_link("/#").render(),
+            contact=NavItem(
+                children=Text(
+                    text="Contact Us", dzn="text-[#272727]").render()).no_underline().center().as_link("/#").render(),
+            services=NavItem(
+                children=Text(text="Services", dzn="text-[#272727]").render()).no_underline().center().as_link("/#").render()
+        )
+    )
+    return render_template("index.html", body=body)
+```
+
+<p align="center">
+  <img src="docs/simple_website_layout_appbar_components_centered.png" alt="mobile" width="640">
+</p>
+
+Pydzn offers utilities for serving responsive websites and leverages htmx to provide complex functionality within your web pages. To be continued...
 
 ## Examples
 - For examples see: [pydzn-website](https://github.com/anthonyrka/pydzn-website)
 
 ## References
 - See [PyPI](https://pypi.org/project/pydzn/)
-
-
-## A website builder for python developers (not front-end developers)
-The layout builder contains a debug mode allowing you to visualize the structure of your layout. Each named region is a slot which can be passed a sub-layout or a component in the layout's render function.
-
-<p align="center">
-  <img src="docs/website_builder_sortof.gif" alt="mobile" width="640">
-</p>
-
-## Responsive is built-in
-Build responsive layouts with pydzn
-
-<p align="center">
-  <img src="docs/pydzn_responsive.gif" alt="mobile" width="640">
-</p>
-
-The above layouts are combined desktop and mobile versions:
-```python
-
-from pydzn.grid_builder import layout_builder
-
-# This is the Main App layout structure we've created below for DESKTOP
-"""
-                    column::left_column    column::main_column
-row:header_row      region:left_sidebar    region:appbar
-row:content_row     region:left_sidebar    region:content
-
-The layout accepts the following components in render function signature: left_sidebar, appbar, content
-"""
-AppMainLayout = (
-    layout_builder()
-    .fill_height("100vh", property="height") # sets up the page to restrict height to view height
-    .columns(left_column=LEFT_SIDEBAR_WIDTH, main_column="1fr") # split the main layout into two columns: sidebar and main
-    .rows(header_row=HEADER_HEIGHT, content_row="1fr") # add 2 rows: a header section and a content section stacked 
-    .region("left_sidebar", col="left_column", row="header_row", row_span=2) # place the sidebar into the left_sidebar column in the first row and span both rows
-    .region("appbar", col="main_column", row="header_row", col_span=1) # Add the appbar to the right of sidebar in the main section and span the last row
-    .region("content", col="main_column", row="content_row") # declare the empty content section which is the last row in main
-    .build(name="AppMainLayout")
-)
-
-# This is the Main App layout structure we've created below for MOBILE
-"""
-                    column::main_column
-row:header_row      region:appbar
-row:content_row     region:content
-
-The layout accepts the following components in render function signature: appbar, content
-"""
-AppMainMobileLayout = (
-    layout_builder()
-    .fill_height("100vh", property="height")
-    .columns(main_column="1fr")
-    .rows(header_row=HEADER_HEIGHT_MOBILE, content_row="1fr")
-    .region("appbar",  col="main_column", row="header_row")
-    .region("content", col="main_column", row="content_row")
-    .build(name="AppMainMobileLayout")
-)
-
-# ----- App header menu slots -----#
-AppHeaderMenuLayout = (
-    layout_builder()
-    # make the inner grid fill the parent (the appbar row), not the viewport
-    .fill_height("100%", property="height") # was min-height:100vh (implicit default)
-    .columns(brand=BRAND_WIDTH, spacer="1fr", tasks=APP_MENU_WIDTH, customers=APP_MENU_WIDTH, orders=APP_MENU_WIDTH, notifications=APP_MENU_WIDTH, user_profile=APP_MENU_WIDTH)
-    .rows(app_header_main=f"minmax({HEADER_HEIGHT}px, auto)") # these items don't take up the full height of the app header unless you set it here
-    .region("brand", col="brand", row="app_header_main")
-    .region("spacer", col="spacer", row="app_header_main") # empty; pushes the rest right
-    .region("tasks", col="tasks", row="app_header_main")
-    .region("customers", col="customers", row="app_header_main")
-    .region("orders", col="orders", row="app_header_main")
-    .region("notifications", col="notifications", row="app_header_main")
-    .region("user_profile", col="user_profile", row="app_header_main")
-    .build(name="AppHeaderMenuLayout")
-)
-
-# ----- App header mobile menu layout ----#
-AppHeaderMobileMenuLayout = (
-    layout_builder()
-    .fill_height("100%", property="height")
-    .columns(brand_col=BRAND_WIDTH, spacer_col="1fr", hamburger_menu_col=100)
-    .rows(app_header_mobile_row=f"minmax({HEADER_HEIGHT_MOBILE}px, auto)") # this container holds the app header for mobile layout so height must match
-    .region("brand", col="brand_col", row="app_header_mobile_row")
-    .region("hamburger_menu", col="hamburger_menu_col", row="app_header_mobile_row")
-    .build(name="AppHeaderMobileMenuLayout")
-)
-
-```
-
-These layouts contain render functions with a signature containing the named slots for variables, in the case of AppMainMobileLayout, the hamburger_menu slot is passed a built-in hamburger menu component:
-
-```python
-from pydzn.components import NavItem, Text, HamburgerMenu
-
-# Right-side full-height drawer
-menu_btn = HamburgerMenu(
-    mode="right",
-    drawer_width=320,
-    show_backdrop=True,
-    children=drop_down_mobile,
-    dzn="bg-[white]",   # forwarded to the panel automatically
-    panel_dzn="p-[24px]" # this is how you set the semantic css classes for the drawer (panel)
-).render()
-
-
-mobile_html = AppHeaderMobileMenuLayout(
-    debug=debug,
-    region_dzn = {
-        "brand": "flex justify-center items-center",
-        "hamburger_menu": "flex justify-center items-center"
-    }
-).render(
-    brand=brand,
-    hamburger_menu=menu_btn
-)
-```
-
-
-
