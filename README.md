@@ -81,6 +81,7 @@ The layout we've created is a common layout containing an appbar, hero, body and
 Next let's add some of pydzn pre-made components into the appbar.
 
 ```python
+...
     from pydzn.components import Text, NavItem
 
     body = GenericPageLayout(debug=DEBUG).render(
@@ -109,6 +110,7 @@ Next let's add some of pydzn pre-made components into the appbar.
 We inject complex components (NavItem composed of Text) into the region slots inside `AppBarLayout`, however, I don't like how the look inside their respective regions. pydzn provides a dzn controls on layouts in order to define the layout within each region. Let's center each of these components in their respective region.
 
 ```python
+...
     from pydzn.components import Text, NavItem
 
     body = GenericPageLayout(
