@@ -13,7 +13,7 @@ More than just a view layer, pydzn serves as a framework that introduces python 
 - Professional front-end developers who want to avoid react abstraction bloat and javascript's async chaos
 
 ## Why pydzn
-Creating and serving a webpage is technically easy for most developers. Designing and developing a nice looking website is much more difficult. pydzn offers a framework for, breaking up the task of front-end design and development, logically, into layout creation, component creation with the injection of those components into that layout. Where a layout is a grid in a 2-dimensional space containing named regions of which you style and inject components into. A layout is a class which can have an arbitrary number of regions. A region is a placement in a grid layout for which another layout can be inject OR a component.
+Creating and serving a webpage is technically easy for most developers. Designing and developing a nice looking website is much more difficult. pydzn offers a framework for breaking up the task of front-end design and development, logically, into layout creation, component creation with the injection of those components into that layout. Where a layout is a grid in a 2-dimensional space containing named regions of which you style and inject components into. A layout is a class which can have an arbitrary number of regions. A region is a placement in a grid layout for which another layout can be inject OR a component.
 
 ## Introduction
 
@@ -107,7 +107,7 @@ Next let's add some of pydzn pre-made components into the appbar.
   <img src="docs/simple_website_layout_appbar_components.png" alt="mobile" width="640">
 </p>
 
-We inject complex components (NavItem composed of Text) into the region slots inside `AppBarLayout`, however, I don't like how the look inside their respective regions. pydzn provides a dzn controls on layouts in order to define the layout within each region. Let's center each of these components in their respective region.
+We inject complex components (NavItem composed of Text) into the region slots inside `AppBarLayout`, however, I don't like how they look inside their respective regions. pydzn provides a dzn controls on layouts in order to define the layout within each region. Let's center each of these components in their respective region.
 
 ```python
 ...
