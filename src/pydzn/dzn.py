@@ -151,6 +151,12 @@ def rule(selector: str, body: str) -> str:
 def emit_base(name: str) -> str | None:
     match name:
 
+        case "object-cover":  return rule(name, "object-fit:cover")
+        case "object-contain":return rule(name, "object-fit:contain")
+        case "object-center": return rule(name, "object-position:center")
+        case "w-full":        return rule(name, "width:100%")
+        case "h-full":        return rule(name, "height:100%")
+
         # layout
         case "flex":            return rule(name, "display:flex")
         case "flex-col":        return rule(name, "flex-direction:column")
@@ -429,6 +435,10 @@ def emit_scale(name: str) -> str | None:
 def emit_arbitrary(name: str) -> str | None:
     esel = css_escape_class(name)
 
+    # in emit_arbitrary(...)
+    if m := re.fullmatch(r"aspect-\[(.+?)\]", name):
+        return rule(css_escape_class(name), f"aspect-ratio:{m.group(1)}")
+
     # width
     if m := re.fullmatch(r"w-\[(.+?)\]", name):
         return rule(esel, f"width:{m.group(1)}")
@@ -440,6 +450,23 @@ def emit_arbitrary(name: str) -> str | None:
         v = m.group(1); return rule(esel, f"padding-left:{v};padding-right:{v}")
     if m := re.fullmatch(r"py-\[(.+?)\]", name):
         v = m.group(1); return rule(esel, f"padding-top:{v};padding-bottom:{v}")
+
+    # colors & font-size (arbitrary)
+    if m := re.fullmatch(r"text-\[(.+?)\]", name):
+        raw = m.group(1)
+        v = raw.replace("_", " ")
+        # If it's a length or a calc()/clamp()/min()/max() expression → font-size
+        if (
+            re.fullmatch(r"\d+(?:\.\d+)?(px|rem|em|ch|ex|vh|vw|vmin|vmax|%)", v)
+            or v.startswith(("calc(", "clamp(", "min(", "max("))
+        ):
+            return rule(esel, f"font-size:{v}")
+        # Otherwise treat as a color
+        return rule(esel, f"color:{v}")
+
+    # size
+    if m := re.fullmatch(r"h-\[(.+?)\]", name):
+        return rule(css_escape_class(name), f"height:{m.group(1)}")
 
     # gap
     if m := re.fullmatch(r"gap-\[(.+?)\]", name):
