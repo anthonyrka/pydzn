@@ -52,7 +52,7 @@ class Button(VariantSupport, BaseComponent, HtmxSupport):
 
     # project-wide defaults can be overridden via VariantSupport.set_default_choices(Button, ...)
     DEFAULTS = {
-        "variant": "outline-primary",
+        "variant": "",
         "size": "md",
         "tone": "",
     }
@@ -85,5 +85,14 @@ class Button(VariantSupport, BaseComponent, HtmxSupport):
         super().__init__(children=children, tag=tag, dzn=effective_dzn, **attrs)
         self.text = text
 
+    def as_link(self, href: str, *, new_tab: bool=False):
+            self.tag = "a"
+            self.html_attrs["href"] = href
+            self.html_attrs["role"] = "link"
+            if new_tab:
+                self.html_attrs["target"] = "_blank"
+                self.html_attrs["rel"] = "noopener noreferrer"
+            return self
+            
     def context(self) -> dict:
         return {"text": self.text}

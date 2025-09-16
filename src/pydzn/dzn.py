@@ -280,6 +280,8 @@ def emit_base(name: str) -> str | None:
         case "decoration-dashed": return rule(name, "text-decoration-style:dashed")
         case "decoration-dotted": return rule(name, "text-decoration-style:dotted")
 
+        case "whitespace-nowrap": return rule(name, "white-space:nowrap")
+
     return None
 
 
@@ -303,6 +305,29 @@ def emit_scale(name: str) -> str | None:
     if m := re.fullmatch(r"py-(\d+)", name):
         if (val := TOKENS["space"].get(m.group(1))) is not None:
             return rule(name, f"padding-top:{val};padding-bottom:{val}")
+
+    # padding per side (tokenized)
+    if m := re.fullmatch(r"pr-(\d+)", name):
+        if (val := TOKENS["space"].get(m.group(1))) is not None:
+            return rule(name, f"padding-right:{val}")
+    if m := re.fullmatch(r"pl-(\d+)", name):
+        if (val := TOKENS["space"].get(m.group(1))) is not None:
+            return rule(name, f"padding-left:{val}")
+    if m := re.fullmatch(r"pt-(\d+)", name):
+        if (val := TOKENS["space"].get(m.group(1))) is not None:
+            return rule(name, f"padding-top:{val}")
+    if m := re.fullmatch(r"pb-(\d+)", name):
+        if (val := TOKENS["space"].get(m.group(1))) is not None:
+            return rule(name, f"padding-bottom:{val}")
+
+    # logical (RTL-aware)
+    if m := re.fullmatch(r"ps-(\d+)", name):
+        if (val := TOKENS["space"].get(m.group(1))) is not None:
+            return rule(name, f"padding-inline-start:{val}")
+    if m := re.fullmatch(r"pe-(\d+)", name):
+        if (val := TOKENS["space"].get(m.group(1))) is not None:
+            return rule(name, f"padding-inline-end:{val}")
+
 
     # ---- border widths FIRST ----
     if m := re.fullmatch(r"border-(0|2|4|8)", name):
@@ -450,6 +475,23 @@ def emit_arbitrary(name: str) -> str | None:
         v = m.group(1); return rule(esel, f"padding-left:{v};padding-right:{v}")
     if m := re.fullmatch(r"py-\[(.+?)\]", name):
         v = m.group(1); return rule(esel, f"padding-top:{v};padding-bottom:{v}")
+    
+    # arbitrary per-side padding
+    if m := re.fullmatch(r"pr-\[(.+?)\]", name):
+        return rule(esel, f"padding-right:{m.group(1)}")
+    if m := re.fullmatch(r"pl-\[(.+?)\]", name):
+        return rule(esel, f"padding-left:{m.group(1)}")
+    if m := re.fullmatch(r"pt-\[(.+?)\]", name):
+        return rule(esel, f"padding-top:{m.group(1)}")
+    if m := re.fullmatch(r"pb-\[(.+?)\]", name):
+        return rule(esel, f"padding-bottom:{m.group(1)}")
+
+    # logical (RTL-aware) arbitrary
+    if m := re.fullmatch(r"ps-\[(.+?)\]", name):
+        return rule(esel, f"padding-inline-start:{m.group(1)}")
+    if m := re.fullmatch(r"pe-\[(.+?)\]", name):
+        return rule(esel, f"padding-inline-end:{m.group(1)}")
+
 
     # colors & font-size (arbitrary)
     if m := re.fullmatch(r"text-\[(.+?)\]", name):
