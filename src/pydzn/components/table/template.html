@@ -1,79 +1,72 @@
 <div {{ attrs|safe }}>
     {% if show_toolbar %}
-    <div class="flex items-center justify-between px-3 py-2 border-b border-subtle">
+    <div class="{{ d_toolbar }}">
       <div class="flex items-center gap-2">
-        <!-- Slot for future toolbar items (filters, search). Keep simple for now. -->
+        {# bulk/search/export buttons here; use d_btn / d_search_input #}
       </div>
-      <div class="flex items-center gap-2">
-        {% if add_column_url %}
-        <button
-          class="rounded-sm border bg-[white] text-[black] px-3 py-2 hover:bg-[rgba(15,23,42,.04)]"
-          hx-get="{{ add_column_url }}"
-          hx-target="#{{ id }}"
-          hx-swap="outerHTML">
-          + Column
-        </button>
-        {% endif %}
-        {% if export_url %}
-        <button
-          class="rounded-sm border bg-[white] text-[black] px-3 py-2 hover:bg-[rgba(15,23,42,.04)]"
-          onclick="window.location.href='{{ export_url }}'">
-          Export
-        </button>
-        {% endif %}
-      </div>
+      <form action="{{ search_action or '' }}" method="get"
+            {% if search_action %}hx-get="{{ search_action }}" hx-target="#{{ id }}" hx-swap="outerHTML"{% endif %}>
+        <input class="{{ d_search_input }}" type="search" name="q" value="{{ search_query }}" placeholder="Search…">
+        <button class="{{ d_btn }}" type="submit">Search</button>
+      </form>
     </div>
     {% endif %}
   
     <div class="overflow-auto">
       <table class="w-[100%]">
-        <thead>
-          <tr class="border-b border-subtle">
+        <thead class="{{ d_thead }}">
+          <tr>
             {% for col in columns %}
-              {% set align = col.align or 'left' %}
-              {% set th_dzn = (col.dzn or '') + ' ' + cell_pad_dzn %}
-              {% set th_cls = th_dzn + ' ' + ('text-left' if align=='left' else ('text-right' if align=='right' else 'text-center')) %}
-              <th
-                class="{{ th_cls }}"
-                {% if col.width %} style="width:{{ col.width }}"{% endif %}>
-                {% if sort_url and col.sortable %}
-                  {# build toggle dir based on current state #}
-                  {% set next_dir = (toggle_dir if sort_key==col.key else 'asc') %}
-                  <button
-                    class="no-underline bg-[transparent] border-0 text-[inherit] hover:underline"
-                    hx-get="{{ sort_url }}?sort={{ col.key }}&dir={{ next_dir }}"
-                    hx-target="#{{ id }}"
-                    hx-swap="outerHTML"
-                    hx-push-url="true">
-                    <span>{{ col.label }}</span>
-                    {% if sort_key == col.key %}
-                      <span aria-hidden="true">{{ '▲' if sort_dir=='asc' else '▼' }}</span>
-                    {% endif %}
-                  </button>
+              <th class="{{ cell_pad_dzn }} {{ d_th }}">
+                {# sorting link if enabled #}
+                {% if col.sortable and sort_url %}
+                  <a hx-get="{{ sort_url }}?sort={{ col.key }}&dir={{ 'desc' if sort_key==col.key and sort_dir=='asc' else 'asc' }}"
+                     hx-target="#{{ id }}" hx-swap="outerHTML">
+                    {{ col.label }}{% if sort_key==col.key %} {{ '▲' if sort_dir=='asc' else '▼' }}{% endif %}
+                  </a>
                 {% else %}
-                  <span>{{ col.label }}</span>
+                  {{ col.label }}
                 {% endif %}
               </th>
             {% endfor %}
           </tr>
         </thead>
-  
         <tbody>
           {% for row in rows %}
-            {# zebra striping without :odd/:even — compute server-side #}
-            {% set row_bg = 'bg-[rgba(15,23,42,.03)]' if striped and loop.index0 % 2 == 1 else '' %}
-            <tr class="border-b border-subtle {{ row_bg }}">
+            <tr class="{{ d_tr }} {% if striped and loop.index0 % 2 == 1 %} {{ d_tr_alt }} {% endif %}">
               {% for col in columns %}
-                {% set align = col.align or 'left' %}
-                {% set td_cls = cell_pad_dzn + ' ' + ('text-left' if align=='left' else ('text-right' if align=='right' else 'text-center')) %}
-                <td class="{{ td_cls }}">
-                  {{ (row.get(col.key, '')|safe) }}
-                </td>
+                {% set val = row.get(col.key, '') %}
+                {% if primary_key and col.key == primary_key %}
+                  <td class="{{ cell_pad_dzn }} {{ d_td }}">
+                    <div class="{{ d_primary }}">{{ val|safe }}</div>
+                    {% if row.get(actions_key) %}
+                      <div class="{{ d_row_actions }}">{{ row.get(actions_key)|safe }}</div>
+                    {% endif %}
+                  </td>
+                {% else %}
+                  <td class="{{ cell_pad_dzn }} {{ d_td }}">{{ val|safe }}</td>
+                {% endif %}
               {% endfor %}
             </tr>
           {% endfor %}
         </tbody>
       </table>
     </div>
+  
+    {% if total and pages > 1 %}
+    <div class="{{ d_footer }}">
+      <div>{{ total }} items</div>
+      <div class="flex items-center gap-2">
+        {% set last = pages %}
+        {% set prev = page-1 if page>1 else 1 %}
+        {% set next = page+1 if page<pages else pages %}
+        <button class="{{ d_pager }}" hx-get="{{ sort_url }}?page=1&per_page={{ per_page }}&sort={{ sort_key }}&dir={{ sort_dir }}"  hx-target="#{{ id }}" hx-swap="outerHTML">«</button>
+        <button class="{{ d_pager }}" hx-get="{{ sort_url }}?page={{ prev }}&per_page={{ per_page }}&sort={{ sort_key }}&dir={{ sort_dir }}" hx-target="#{{ id }}" hx-swap="outerHTML">‹</button>
+        <span>Page {{ page }} of {{ pages }}</span>
+        <button class="{{ d_pager }}" hx-get="{{ sort_url }}?page={{ next }}&per_page={{ per_page }}&sort={{ sort_key }}&dir={{ sort_dir }}" hx-target="#{{ id }}" hx-swap="outerHTML">›</button>
+        <button class="{{ d_pager }}" hx-get="{{ sort_url }}?page={{ last }}&per_page={{ per_page }}&sort={{ sort_key }}&dir={{ sort_dir }}" hx-target="#{{ id }}" hx-swap="outerHTML">»</button>
+      </div>
+    </div>
+    {% endif %}
   </div>
   
