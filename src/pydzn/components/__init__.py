@@ -10,6 +10,10 @@ from .table.component import Table
 from .form.component import Form
 from .labeled_input.component import LabeledInput
 from .labeled_textarea.component import LabeledTextarea
+from .iframe.component import Iframe
 
 
-__all__ = ["Button", "Image", "Card", "Text", "Drawer", "Sidebar", "Table", "NavItem", "HamburgerMenu", "Form", "LabeledInput", "LabeledTextarea"]
+__all__ = [
+    "Button", "Image", "Card", "Text", "Drawer", "Sidebar", 
+    "Table", "NavItem", "HamburgerMenu", "Form", "LabeledInput",
+    "LabeledTextarea", "Iframe"]
