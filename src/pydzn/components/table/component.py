@@ -113,6 +113,8 @@ class Table(VariantSupport, BaseComponent, HtmxSupport):
         page: int = 1,
         per_page: int = 20,
         total: int = 0,
+        # helps with search
+        hx_target: Optional[str] = None,
         # variant system
         variant: Optional[str] = None,
         size: Optional[str] = None,
@@ -129,6 +131,7 @@ class Table(VariantSupport, BaseComponent, HtmxSupport):
         self.add_column_url = add_column_url
         self.show_toolbar = bool(show_toolbar or export_url or add_column_url)
         self.striped = bool(striped)
+        self.hx_target = hx_target
 
         # Resolve variant/size/tone and capture size padding for cells
         size_key = size if size is not None else self.DEFAULTS.get("size", "md")
@@ -211,4 +214,5 @@ class Table(VariantSupport, BaseComponent, HtmxSupport):
             "actions_key": self.actions_key,
             "page": self.page, "per_page": self.per_page, "total": self.total,
             "pages": (self.total + self.per_page - 1)//self.per_page if self.total else 1,
+            "hx_target": self.hx_target,
         }}
