@@ -44,7 +44,6 @@
             {% else %}
               {{ col.label }}
             {% endif %}
-            
             </th>
           {% endfor %}
         </tr>
@@ -52,7 +51,24 @@
 
       <tbody>
         {% for row in rows %}
-          <tr class="{{ d_tr }} {% if striped and loop.index0 % 2 == 1 %} {{ d_tr_alt }} {% endif %}">
+          {# compute the correct separator for the row URL #}
+          {% set sep2 = '&' if '?' in (row_click.url or '') else '?' %}
+          
+          <tr
+            class="{{ d_tr }} {% if striped and loop.index0 % 2 == 1 %} {{ d_tr_alt }} {% endif %}{% if row_click %} cursor-pointer{% endif %}"
+            {% if row_click %}
+              hx-get="{{ row_click.url }}{{ sep2 }}{{ row_click.id_param }}={{ row[row_click.id_key] }}"
+              hx-target="{{ row_click.target }}"
+              hx-swap="{{ row_click.swap or 'innerHTML' }}"
+              hx-push-url="{{ 'true' if row_click.push_url else 'false' }}"
+              hx-trigger="click, keydown.enter"
+              role="button" tabindex="0"
+              data-row-id="{{ row[row_click.id_key] }}"
+              hx-on:click='window.__openDrawer({{ row_click.open_drawer_id|tojson }}, {{ (row_click.title|default("Edit a review"))|tojson }})'
+              hx-on:htmx:beforeRequest='window.__openDrawer({{ row_click.open_drawer_id|tojson }}, {{ (row_click.title|default("Edit a review"))|tojson }})'
+            {% endif %}
+          >
+        
             {% for col in columns %}
               {% set val = row.get(col.key, '') %}
               {% if primary_key and col.key == primary_key %}

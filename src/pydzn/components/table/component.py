@@ -19,6 +19,18 @@ class Table(VariantSupport, BaseComponent, HtmxSupport):
       { "key": "id", "label": "ID", "sortable": True, "width": "80px", "align": "left", "dzn": "..." }
 
     Rows: list[dict], keys match column["key"]. Values can be strings (HTML allowed) or already-rendered HTML.
+
+    Example - Row click - Drawer Open:
+    row_click = {
+        "url": "/admin/google-reviews/edit",         # endpoint that returns the edit form HTML
+        "id_key": "id",                              # which key in each row dict holds the id
+        "id_param": "id",                            # query param name to pass (e.g., ?id=123)
+        "target": "#google-review-drawer-body",      # where to inject the returned HTML
+        "swap": "innerHTML",                         # swap strategy
+        "push_url": False,                           # usually false for drawers
+        "open_drawer_id": "google-review-drawer",    # which drawer to unhide
+    }
+    
     """
 
     template_name = "template.html"
@@ -100,7 +112,7 @@ class Table(VariantSupport, BaseComponent, HtmxSupport):
         add_column_url: Optional[str] = None,
         show_toolbar: bool = False,
         striped: bool = False,
-        # NEW — WP-ish bits
+        row_click: dict | None = None, # row clickable functionality
         selectable: bool = False,                 # leading checkbox column
         bulk_actions: Optional[List[Dict[str,str]]] = None,  # [{label, value}]
         bulk_action_url: Optional[str] = None,    # POST target of bulk actions
@@ -138,6 +150,7 @@ class Table(VariantSupport, BaseComponent, HtmxSupport):
         # size dzn to apply on each <td>/<th>
         self._cell_pad_dzn = self.__class__._lookup_variant_piece("sizes", size_key) or "px-4 py-3"
 
+        self.row_click = row_click or None
         self.selectable     = bool(selectable)
         self.bulk_actions   = bulk_actions or []
         self.bulk_action_url= bulk_action_url
@@ -215,4 +228,5 @@ class Table(VariantSupport, BaseComponent, HtmxSupport):
             "page": self.page, "per_page": self.per_page, "total": self.total,
             "pages": (self.total + self.per_page - 1)//self.per_page if self.total else 1,
             "hx_target": self.hx_target,
+            "row_click": self.row_click,
         }}
