@@ -96,3 +96,35 @@ class Button(VariantSupport, BaseComponent, HtmxSupport):
             
     def context(self) -> dict:
         return {"text": self.text}
+
+
+
+class GenericButton(BaseComponent, HtmxSupport):
+    """
+    Server-rendered generic Button
+    """
+
+    def __init__(
+        self,
+        id: str = "",
+        text: str = "",
+        children: str | None = None,
+        *,
+        tag: str = "button",
+        **attrs,
+    ):
+
+        super().__init__(children=children, tag=tag, id=id, **attrs)
+        self.text = text
+
+    def as_link(self, href: str, *, new_tab: bool=False):
+            self.tag = "a"
+            self.html_attrs["href"] = href
+            self.html_attrs["role"] = "link"
+            if new_tab:
+                self.html_attrs["target"] = "_blank"
+                self.html_attrs["rel"] = "noopener noreferrer"
+            return self
+            
+    def context(self) -> dict:
+        return {"text": self.text}

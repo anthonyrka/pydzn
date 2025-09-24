@@ -94,3 +94,74 @@ class LabeledInput(BaseComponent, HtmxSupport):
             "error": self.error,
             "input_attrs": self.input_attrs,
         }
+
+
+
+class GenericLabeledInput(BaseComponent, HtmxSupport):
+    """
+    - Uses BaseComponent so it renders from template.html next to this file.
+    """
+
+    template_name = "template.html"
+
+    def __init__(
+        self,
+        *,
+        label: str,
+        name: str,
+        type_: str = "text",
+        value: str = "",
+        placeholder: str = "",
+        autocomplete: str = "",
+        required: bool = True,
+        disabled: bool = False,
+        readonly: bool = False,
+
+        # optional helper text & error text
+        hint: str = "",
+        error: str = "",
+
+        # extra attributes for the <input> element only
+        input_attrs: dict | None = None,
+
+        # Optional explicit id for the input (else auto-generated)
+        input_id: str | None = None,
+
+        **wrapper_attrs,  # goes on the outer wrapper <div>
+    ):
+        super().__init__(children="", tag="div", **wrapper_attrs)
+
+        # Store props
+        self.label = label
+        self.name = name
+        self.type_ = type_
+        self.value = value
+        self.placeholder = placeholder
+        self.autocomplete = autocomplete
+        self.required = bool(required)
+        self.disabled = bool(disabled)
+        self.readonly = bool(readonly)
+
+        self.hint  = hint or ""
+        self.error = error or ""
+
+        self.input_attrs = dict(input_attrs or {})
+        self.input_id = input_id or (self.id + "-input")
+
+
+    def context(self) -> dict:
+        return {
+            "input_id": self.input_id,
+            "label": self.label,
+            "name": self.name,
+            "type_": self.type_,
+            "value": self.value,
+            "placeholder": self.placeholder,
+            "autocomplete": self.autocomplete,
+            "required": self.required,
+            "disabled": self.disabled,
+            "readonly": self.readonly,
+            "hint": self.hint,
+            "error": self.error,
+            "input_attrs": self.input_attrs,
+        }

@@ -92,3 +92,23 @@ class Card(VariantSupport, BaseComponent, HtmxSupport):
 
     def context(self) -> dict:
         return {}
+
+
+
+class GenericCard(BaseComponent, HtmxSupport):
+    """
+    Server-rendered GenericCard
+    """
+
+    def __init__(
+        self,
+        children: str | None = None,
+        *,
+        tag: str = "div",
+        **attrs,
+    ):
+
+        super().__init__(children=children, tag=tag, **attrs)
+
+    def context(self) -> dict:
+        return {}
