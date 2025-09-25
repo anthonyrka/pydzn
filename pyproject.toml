@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "pydzn"
-version = "0.1.8"
+version = "0.1.9"
 description = "Build complex websites in pure python with pydzn layout builder, semantic css classes and an extendable components library for server-side rendering."
 readme = "README.md"
 requires-python = ">=3.10"

@@ -227,3 +227,36 @@ class NavItem(VariantSupport, BaseComponent):
     # required by BaseComponent
     def context(self) -> dict:
         return {}
+
+
+
+class GenericNavItem(BaseComponent):
+
+    # -------- ctor --------
+    def __init__(
+        self,
+        *,
+        children: str | None = None,
+        tag: str = "div",
+        **attrs,
+    ):
+
+        # minimal a11y defaults
+        attrs.setdefault("role", "button")
+        attrs.setdefault("tabindex", "0")
+
+        # let BaseComponent merge base dzn into class
+        super().__init__(children=children or "", tag=tag, **attrs)
+
+    def as_link(self, href: str, *, new_tab: bool=False):
+        self.tag = "a"
+        self.html_attrs["href"] = href
+        self.html_attrs["role"] = "link"
+        if new_tab:
+            self.html_attrs["target"] = "_blank"
+            self.html_attrs["rel"] = "noopener noreferrer"
+        return self
+
+    # required by BaseComponent
+    def context(self) -> dict:
+        return {}
